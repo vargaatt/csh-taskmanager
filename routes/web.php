@@ -15,3 +15,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [TaskController::class, 'view'] );
+Route::get('/user/tasks', [TaskController::class, 'getUserTasks']);
+Route::post('/user/tasks/create', [TaskController::class, 'create']);
+Route::post('/user/tasks/{task}', [TaskController::class, 'update']);
+Route::delete('/user/tasks', [TaskController::class, 'delete']);

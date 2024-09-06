@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('description');
             $table->unsignedBigInteger('estimated_time');
-            $table->unsignedBigInteger('used_time');
+            $table->unsignedBigInteger('used_time')->default(0);
             $table->date('created_date');
-            $table->date('completed_date');
+            $table->date('completed_date')->nullable()->default(null);
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
