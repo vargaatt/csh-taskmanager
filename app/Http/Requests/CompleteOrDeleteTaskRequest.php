@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CompleteTaskRequest extends FormRequest
+class CompleteOrDeleteTaskRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,8 +23,8 @@ class CompleteTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'idsToComplete' => 'required|array',
-            'idsToComplete.*' => 'exists:tasks,id'
+            'ids' => 'required|array',
+            'ids.*' => 'exists:tasks,id'
         ];
     }
 }

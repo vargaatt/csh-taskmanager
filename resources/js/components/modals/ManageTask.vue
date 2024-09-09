@@ -7,17 +7,17 @@
             </v-card-title>
             <v-card-text>
                 <v-container>
-                    <v-form ref="form">
+                    <v-form ref="taskForm">
                         <v-row>
                             <v-col cols="6" md="6" sm="6">
                                 <v-text-field v-model="taskToManage.estimated_time" :rules="timeRule" type="number"
-                                              label="Estimated time">
+                                              label="Estimated time (hours)">
                                 </v-text-field>
                             </v-col>
                             <v-col cols="6" md="6" sm="6">
                                 <v-select
                                     v-model="taskToManage.assignee"
-                                    label="Select"
+                                    label="Select user"
                                     :items="userList"
                                     :rules="userRule"
                                     item-value="id"
@@ -28,8 +28,8 @@
                                 >
                                 </v-select>
                             </v-col>
-                            <v-col v-if="!creatingTask" :rules="timeRule" cols="6" md="6" sm="6">
-                                <v-text-field v-model="taskToManage.used_time" type="number" label="Time spent">
+                            <v-col v-if="!creatingTask" cols="6" md="6" sm="6">
+                                <v-text-field v-model="taskToManage.used_time" :rules="timeRule" type="number" label="Time spent (hours)">
                                 </v-text-field>
                             </v-col>
                         </v-row>
@@ -43,7 +43,6 @@
                     </v-form>
                 </v-container>
             </v-card-text>
-
             <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn color="blue-darken-1" variant="text" @click="closeDialog"> Cancel</v-btn>
@@ -65,7 +64,7 @@ const props = defineProps({
     onConfirm: Function,
 })
 const taskToManage = ref(null);
-const form = ref(null);
+const taskForm = ref(null);
 
 const userRule = [value => {
     if (value) return true;
@@ -95,7 +94,7 @@ watch(() => props.show, (newValue) => {
 });
 
 async function submit() {
-    const {valid} = await form.value.validate();
+    const {valid} = await taskForm.value.validate();
     if (valid) {
         props.onConfirm(taskToManage)
     }

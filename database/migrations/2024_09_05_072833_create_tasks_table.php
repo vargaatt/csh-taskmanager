@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->string('description');
-            $table->unsignedBigInteger('estimated_time');
-            $table->unsignedBigInteger('used_time')->default(0);
+            $table->float('estimated_time');
+            $table->float('used_time')->default(0);
             $table->date('created_date');
             $table->date('completed_date')->nullable()->default(null);
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

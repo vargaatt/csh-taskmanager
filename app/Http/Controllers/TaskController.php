@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CompleteTaskRequest;
+use App\Http\Requests\CompleteOrDeleteTaskRequest;
 use App\Http\Requests\CreateTaskRequest;
-use App\Http\Requests\DeleteTasksRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Task;
 use App\Models\User;
@@ -52,16 +51,16 @@ class TaskController extends Controller
         return response()->json(true);
     }
 
-    public function delete(DeleteTasksRequest $request): JsonResponse
+    public function delete(CompleteOrDeleteTaskRequest $request): JsonResponse
     {
-        Task::destroy($request->get('idsToDelete'));
+        Task::destroy($request->get('ids'));
 
         return response()->json(true);
     }
 
-    public function completeTasks(CompleteTaskRequest $request): JsonResponse
+    public function completeTasks(CompleteOrDeleteTaskRequest $request): JsonResponse
     {
-        Task::whereIn('id', $request->get('idsToComplete'))->where('completed_date', null)->update(['completed_date' => now()]);
+        Task::whereIn('id', $request->get('ids'))->where('completed_date', null)->update(['completed_date' => now()]);
 
         return response()->json(true);
     }

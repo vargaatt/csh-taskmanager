@@ -32,7 +32,7 @@
     >
         <template v-slot:top>
             <v-toolbar flat>
-                <v-toolbar-title>My Tasks</v-toolbar-title>
+                <v-toolbar-title>Tasks</v-toolbar-title>
                 <v-spacer></v-spacer>
                 <v-btn class="mb-2 my-2" color="primary" dark @click="openCreateModal">
                     Create task
@@ -66,7 +66,7 @@
                         <v-card-actions>
                             <v-spacer></v-spacer>
                             <v-btn color="blue-darken-1" variant="text" @click="close">Cancel</v-btn>
-                            <v-btn color="red-darken-1" variant="text" @click="deleteTasks">Delete</v-btn>
+                            <v-btn color="red-darken-1" variant="text" @click="handleTasks('delete')">Delete</v-btn>
                             <v-spacer></v-spacer>
                         </v-card-actions>
                     </v-card>
@@ -80,12 +80,19 @@
                         <v-card-actions>
                             <v-spacer></v-spacer>
                             <v-btn color="blue-darken-1" variant="text" @click="close">Cancel</v-btn>
-                            <v-btn color="green-darken-1" variant="text" @click="completeTasks">Complete</v-btn>
+                            <v-btn color="green-darken-1" variant="text" @click="handleTasks('complete')">Complete
+                            </v-btn>
                             <v-spacer></v-spacer>
                         </v-card-actions>
                     </v-card>
                 </v-dialog>
             </v-toolbar>
+        </template>
+        <template #item.estimated_time="{ item }">
+            {{ item.estimated_time }}h
+        </template>
+        <template #item.used_time="{ item }">
+            {{ item.used_time }}h
         </template>
         <template v-slot:item.actions="{ item }">
             <v-icon color="success" :disabled="null !== item.completed_date" class="me-2" size="small"
@@ -109,7 +116,6 @@
 import {onMounted, ref, watch} from "vue";
 import ManageTask from "./modals/ManageTask.vue";
 
-const taskList = ref([]);
 const userList = ref([]);
 const selectedTasks = ref([]);
 const search = ref('');
@@ -130,7 +136,7 @@ const selectedTask = ref({
 
 const tableHeaders = ref([
     {title: 'Description', value: 'description', sortable: true},
-    {title: 'Assigned to', value: 'assignee.name', sortable: true},
+    {title: 'Assigned to', value: 'assignee.name', sortable: true, align: 'center'},
     {title: 'Time estimated', value: 'estimated_time', sortable: true, filterable: false},
     {title: 'Time spent', value: 'used_time', sortable: true, filterable: false},
     {title: 'Created', value: 'created_date', sortable: true},
@@ -150,19 +156,29 @@ watch(() => selectedTasks.value, (newValue) => {
 
 async function getUserTasks() {
     const response = await axios.get('/user/tasks');
-    taskList.value = response.data;
-    dataTable.value = [];
-    for (const task of taskList.value) {
-        dataTable.value.push({
+    const selectedIds = selectedTasks.value.map(item => item.id);
+
+    response.data.forEach(task => {
+        const itemToUpdate = dataTable.value.find(item => item.id === task.id);
+
+        const taskData = {
             id: task.id,
             description: task.description,
             assignee: {id: task.user.id, name: task.user.name},
             estimated_time: task.estimated_time,
             used_time: task.used_time,
             created_date: task.created_date,
-            completed_date: task.completed_date,
-        })
-    }
+            completed_date: task.completed_date
+        };
+
+        if (itemToUpdate) {
+            Object.assign(itemToUpdate, taskData);
+        } else {
+            dataTable.value.push(taskData);
+        }
+    });
+
+    selectedTasks.value = dataTable.value.filter(item => selectedIds.includes(item.id));
 }
 
 async function getUserList() {
@@ -181,7 +197,7 @@ function getSumOfField(tasks, field) {
 
 function openEditModal(item) {
     creatingTask.value = false;
-    selectedTask.value = { ...item};
+    selectedTask.value = {...item};
     showDialog.value = true;
 }
 
@@ -189,8 +205,10 @@ function openCreateModal() {
     creatingTask.value = true;
     selectedTask.value['id'] = '';
     selectedTask.value['description'] = '';
-    selectedTask.value['estimated_time'] = 0;
-    selectedTask.value['used_time'] = 0;
+    selectedTask.value['estimated_time'] = 1;
+    selectedTask.value['used_time'] = 1;
+    selectedTask.value['assignee'] = null;
+
     showDialog.value = true;
 }
 
@@ -209,38 +227,31 @@ function openCompleteModal(task) {
 }
 
 function getSubmitFunction() {
-    return creatingTask.value ? createTask : editTask;
+    const action = creatingTask.value ? 'create' : 'edit';
+
+    return () => {
+        saveTask(action)
+    };
 }
 
-async function createTask() {
-    await axios.post('/user/task/create', selectedTask.value);
+async function saveTask(action) {
+    const endpoint = action === 'create' ? '/user/task/create' : '/user/task/' + selectedTask.value['id'];
+    await axios.post(endpoint, selectedTask.value);
     await getUserTasks();
+
     close();
 }
 
-async function editTask() {
-    await axios.post('/user/task/' + selectedTask.value['id'], selectedTask.value);
-    await getUserTasks();
-    close();
-}
+async function handleTasks(action) {
+    const ids = selectedTask.value['id'] ? [selectedTask.value['id']] : selectedTasks.value.map(task => task.id);
+    const endpoint = action === 'delete' ? '/user/tasks' : '/user/tasks/complete';
+    const method = action === 'delete' ? 'delete' : 'post';
+    const data = action === 'delete' ? {data: {ids}} : {ids};
 
-async function deleteTasks() {
-    const idsToDelete = selectedTask.value['id'] ? [selectedTask.value['id']] : selectedTasks.value.map(task => task.id);
-    await axios.delete('/user/tasks', {
-        data: {
-            idsToDelete
-        }
-    });
+    await axios[method](endpoint, data);
     await getUserTasks();
-    selectedTasks.value = selectedTasks.value.filter(task => !idsToDelete.includes(task.id));
-    close();
-}
 
-async function completeTasks() {
-    const idsToComplete = selectedTask.value['id'] ? [selectedTask.value['id']] : selectedTasks.value.map(task => task.id);
-    await axios.post('/user/tasks/complete', {idsToComplete});
-    await getUserTasks();
-    selectedTasks.value = selectedTasks.value.filter(task => !idsToComplete.includes(task.id));
+    selectedTasks.value = selectedTasks.value.filter(task => !ids.includes(task.id));
     close();
 }
 
