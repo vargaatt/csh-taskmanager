@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,7 +16,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [TaskController::class, 'view'] );
+Route::get('/users', [UserController::class, 'getUsers'] );
 Route::get('/user/tasks', [TaskController::class, 'getUserTasks']);
-Route::post('/user/tasks/create', [TaskController::class, 'create']);
-Route::post('/user/tasks/{task}', [TaskController::class, 'update']);
+Route::post('/user/task/create', [TaskController::class, 'create']);
+Route::post('/user/task/{task}', [TaskController::class, 'update']);
+Route::post('/user/tasks/complete', [TaskController::class, 'completeTasks']);
 Route::delete('/user/tasks', [TaskController::class, 'delete']);

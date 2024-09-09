@@ -16,6 +16,7 @@ class Task extends Model
         'used_time',
         'created_date',
         'completed_date',
+        'user_id',
     ];
 
     public function user(): BelongsTo

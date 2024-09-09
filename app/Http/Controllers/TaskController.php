@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CompleteTaskRequest;
 use App\Http\Requests\CreateTaskRequest;
 use App\Http\Requests\DeleteTasksRequest;
 use App\Http\Requests\UpdateTaskRequest;
@@ -24,7 +25,7 @@ class TaskController extends Controller
 
     public function getUserTasks(): JsonResponse
     {
-        return response()->json(Auth::user()->tasks);
+        return response()->json(Task::with('user')->get());
     }
 
     public function create(CreateTaskRequest $request): JsonResponse
@@ -40,10 +41,12 @@ class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
+
         $task->update([
             'description' => $request->get('description'),
             'estimated_time' => $request->get('estimated_time'),
             'used_time' => $request->get('used_time'),
+            'user_id' => $request->get('assignee')['id'],
         ]);
 
         return response()->json(true);
@@ -52,6 +55,13 @@ class TaskController extends Controller
     public function delete(DeleteTasksRequest $request): JsonResponse
     {
         Task::destroy($request->get('idsToDelete'));
+
+        return response()->json(true);
+    }
+
+    public function completeTasks(CompleteTaskRequest $request): JsonResponse
+    {
+        Task::whereIn('id', $request->get('idsToComplete'))->where('completed_date', null)->update(['completed_date' => now()]);
 
         return response()->json(true);
     }

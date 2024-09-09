@@ -22,7 +22,6 @@ class TaskFactory extends Factory
             'estimated_time' => $this->faker->numberBetween(0, 60),
             'used_time' => $this->faker->numberBetween(0, 60),
             'created_date' => $this->faker->date(),
-            'completed_date' => $this->faker->date(),
             'user_id' => User::first()->id
         ];
     }
