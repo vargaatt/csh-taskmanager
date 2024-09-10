@@ -22,6 +22,7 @@ class CreateTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'assignee.id' => 'required|exists:users,id',
             'description' => 'required|string',
             'estimated_time' => 'required|numeric|min:1',
         ];

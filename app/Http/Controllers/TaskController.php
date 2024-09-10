@@ -29,7 +29,7 @@ class TaskController extends Controller
 
     public function create(CreateTaskRequest $request): JsonResponse
     {
-        Auth::user()->tasks()->create([
+        User::where('id', $request->get('assignee')['id'])->first()->tasks()->create([
             'description' => $request->get('description'),
             'estimated_time' => $request->get('estimated_time'),
             'created_date' => now(),
