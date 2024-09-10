@@ -1,7 +1,6 @@
 import { createApp } from 'vue';
 import App from './components/App.vue';
 import './bootstrap.js'
-// Import Vuetify components and styles
 import 'vuetify/styles';
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';

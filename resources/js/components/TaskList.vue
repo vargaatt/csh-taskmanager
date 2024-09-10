@@ -1,10 +1,20 @@
 <template>
-    <manage-task :show="showDialog"
+    <manage-task :show="dialogManage"
                  :creating-task="creatingTask"
                  :selected-task="selectedTask"
                  :user-list="userList"
                  :on-confirm="getSubmitFunction()"
-                 @update:show="handleShowChange"></manage-task>
+                 @update:show="(newValue) => dialogManage = newValue"></manage-task>
+    <handle-task :show="dialogDelete"
+                 action="delete"
+                 :selected-tasks="selectedTasks"
+                 :on-confirm="() => handleTasks('delete')"
+                 @update:show="(newValue) => dialogDelete = newValue"></handle-task>
+    <handle-task :show="dialogComplete"
+                 action="complete"
+                 :selected-tasks="selectedTasks"
+                 :on-confirm="() => handleTasks('complete')"
+                 @update:show="(newValue) => dialogComplete = newValue"></handle-task>
     <v-card class="mb-3">
         <v-card-text>
             <v-row>
@@ -13,8 +23,8 @@
                 </v-col>
                 <v-spacer></v-spacer>
                 <v-col class="text-end">
-                    <span class="mx-5">Selected estimate: {{ selectedEstimate }}</span>
-                    <span>Selected spent: {{ selectedSpent }}</span>
+                    <span class="mx-5">Selected estimate: {{ selectedEstimate }}h</span>
+                    <span>Selected spent: {{ selectedSpent }}h</span>
                 </v-col>
             </v-row>
         </v-card-text>
@@ -57,36 +67,11 @@
                     hide-details
                     single-line
                 ></v-text-field>
-                <v-dialog v-model="dialogDelete" max-width="500px">
-                    <v-card>
-                        <v-card-title class="text-h5">Delete selected</v-card-title>
-                        <v-card-text>
-                            <div>Are you sure you want to delete the selected tasks?</div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="blue-darken-1" variant="text" @click="close">Cancel</v-btn>
-                            <v-btn color="red-darken-1" variant="text" @click="handleTasks('delete')">Delete</v-btn>
-                            <v-spacer></v-spacer>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
-                <v-dialog v-model="dialogComplete" max-width="500px">
-                    <v-card>
-                        <v-card-title class="text-h5">Complete selected</v-card-title>
-                        <v-card-text>
-                            <div>Are you sure you want to complete the selected tasks?</div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="blue-darken-1" variant="text" @click="close">Cancel</v-btn>
-                            <v-btn color="green-darken-1" variant="text" @click="handleTasks('complete')">Complete
-                            </v-btn>
-                            <v-spacer></v-spacer>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
+
             </v-toolbar>
+        </template>
+        <template v-slot:item.description="{ item }">
+            <span class=""> {{ item.description }} </span>
         </template>
         <template #item.estimated_time="{ item }">
             {{ item.estimated_time }}h
@@ -95,16 +80,18 @@
             {{ item.used_time }}h
         </template>
         <template v-slot:item.actions="{ item }">
-            <v-icon color="success" :disabled="null !== item.completed_date" class="me-2" size="small"
-                    @click="openCompleteModal(item)">
-                mdi-check
-            </v-icon>
-            <v-icon color="warning" class="" size="small" @click="openEditModal(item)">
-                mdi-pencil
-            </v-icon>
-            <v-icon color="red" class="ms-2" size="small" @click="openDeleteModal(item)">
-                mdi-delete
-            </v-icon>
+            <div class="actions-width ms-auto">
+                <v-icon color="success" :disabled="null !== item.completed_date" class="me-2" size="small"
+                        @click="openCompleteModal(item)">
+                    mdi-check
+                </v-icon>
+                <v-icon color="warning" class="" size="small" @click="openEditModal(item)">
+                    mdi-pencil
+                </v-icon>
+                <v-icon color="red" class="ms-2" size="small" @click="openDeleteModal(item)">
+                    mdi-delete
+                </v-icon>
+            </div>
         </template>
         <template v-slot:no-data>
             <span>No task has been recorded</span>
@@ -115,14 +102,14 @@
 <script setup>
 import {onMounted, ref, watch} from "vue";
 import ManageTask from "./modals/ManageTask.vue";
+import HandleTask from "./modals/HandleTask.vue";
 
 const userList = ref([]);
 const selectedTasks = ref([]);
 const search = ref('');
 const dataTable = ref([]);
 const sortBy = [{key: 'used_time', order: 'desc'}];
-const taskToDelete = ref(null);
-const showDialog = ref(false);
+const dialogManage = ref(false);
 const selectedEstimate = ref(0);
 const selectedSpent = ref(0);
 const dialogDelete = ref(false);
@@ -136,12 +123,12 @@ const selectedTask = ref({
 
 const tableHeaders = ref([
     {title: 'Description', value: 'description', sortable: true},
-    {title: 'Assigned to', value: 'assignee.name', sortable: true, align: 'center'},
-    {title: 'Time estimated', value: 'estimated_time', sortable: true, filterable: false},
-    {title: 'Time spent', value: 'used_time', sortable: true, filterable: false},
-    {title: 'Created', value: 'created_date', sortable: true},
-    {title: 'Completed', value: 'completed_date', sortable: true},
-    {title: 'Actions', key: 'actions', sortable: false, filterable: false},
+    {title: 'Assigned to', value: 'assignee.name', sortable: true},
+    {title: 'Time estimated', value: 'estimated_time', sortable: true, filterable: false, align: 'center'},
+    {title: 'Time spent', value: 'used_time', sortable: true, filterable: false, align: 'center'},
+    {title: 'Created', value: 'created_date', sortable: true, align: 'center'},
+    {title: 'Completed', value: 'completed_date', sortable: true, align: 'center'},
+    {title: 'Actions', key: 'actions', sortable: false, filterable: false, align: 'end'},
 ]);
 
 onMounted(async () => {
@@ -157,6 +144,7 @@ watch(() => selectedTasks.value, (newValue) => {
 async function getUserTasks() {
     const response = await axios.get('/user/tasks');
     const selectedIds = selectedTasks.value.map(item => item.id);
+    const updatedTaskIds = response.data.map(task => task.id);
 
     response.data.forEach(task => {
         const itemToUpdate = dataTable.value.find(item => item.id === task.id);
@@ -178,6 +166,7 @@ async function getUserTasks() {
         }
     });
 
+    dataTable.value = dataTable.value.filter(item => updatedTaskIds.includes(item.id));
     selectedTasks.value = dataTable.value.filter(item => selectedIds.includes(item.id));
 }
 
@@ -198,7 +187,7 @@ function getSumOfField(tasks, field) {
 function openEditModal(item) {
     creatingTask.value = false;
     selectedTask.value = {...item};
-    showDialog.value = true;
+    dialogManage.value = true;
 }
 
 function openCreateModal() {
@@ -209,7 +198,7 @@ function openCreateModal() {
     selectedTask.value['used_time'] = 1;
     selectedTask.value['assignee'] = null;
 
-    showDialog.value = true;
+    dialogManage.value = true;
 }
 
 function openDeleteModal(task) {
@@ -239,7 +228,7 @@ async function saveTask(action) {
     await axios.post(endpoint, selectedTask.value);
     await getUserTasks();
 
-    close();
+    closeDialogs();
 }
 
 async function handleTasks(action) {
@@ -252,17 +241,12 @@ async function handleTasks(action) {
     await getUserTasks();
 
     selectedTasks.value = selectedTasks.value.filter(task => !ids.includes(task.id));
-    close();
+    closeDialogs();
 }
 
-const handleShowChange = (newValue) => {
-    showDialog.value = newValue;
-};
-
-function close() {
-    showDialog.value = false;
+function closeDialogs() {
+    dialogManage.value = false;
     dialogDelete.value = false;
     dialogComplete.value = false;
-    taskToDelete.value = null;
 }
 </script>
